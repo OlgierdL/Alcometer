@@ -1,5 +1,6 @@
 package com.example.alcometer
 
+import android.R.attr.onClick
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,6 +27,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +46,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.toSize
+import java.text.DecimalFormat
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,25 +69,29 @@ fun CalorieApp( modifier: Modifier = Modifier) {
     var weightInput by remember { mutableStateOf("") }
     val weight = weightInput.toIntOrNull() ?: 0
     var male by remember { mutableStateOf(true) }
-    var intensity by remember { mutableStateOf(1.3f) }
-    var result by remember{mutableIntStateOf(0)}
+    var bottles by remember { mutableStateOf(1.0f) }
+    var time by remember { mutableStateOf(1.0f) }
+    var result by remember {mutableStateOf(0.0f)}
+    val dec = DecimalFormat("#.##")
     Column (
         modifier = modifier.padding(all = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ){
-        Heading("Calories")
+        Heading("Alcometer")
         WeightField(weightInput = weightInput,onValueChange={weightInput = it})
         GenderChoices(male, setGenderMale = {male = it})
-        IntensityList (onClick={ intensity = it })
+        BottlesList(onClick={ bottles = it })
+        HoursList(onClick={ time = it })
         Text(
-            text = result.toString(),
+            text = dec.format(result).toString(),
             color = MaterialTheme.colorScheme.secondary,
             fontWeight = FontWeight.Bold
         )
         Calculation(
             male = male,
             weight = weight,
-            intensity=intensity,
+            bottles = bottles.toInt(),
+            time = time.toInt(),
             setResult = {result = it}
         )
     }
@@ -102,13 +109,13 @@ fun Heading(title: String) {
 }
 
 @Composable
-fun Calculation(male: Boolean,weight: Int,intensity: Float, setResult:(Int)->Unit) {
+fun Calculation(male: Boolean,weight: Int,bottles: Int, time: Int, setResult:(Float)->Unit) {
     Button(
         onClick = {
             if (male) {
-                setResult(((879 + 10.2 * weight) * intensity).toInt())
+                setResult((((bottles*0.33*8*4.5)-((weight/10)*time))/(weight*0.7)).toFloat())
             } else {
-                setResult(((795 + 7.18 * weight) * intensity).toInt())
+                setResult((((bottles*0.33*8*4.5)-((weight/10)*time))/(weight*0.6)).toFloat())
             }
         },
         modifier = Modifier.fillMaxWidth()
@@ -154,11 +161,11 @@ fun GenderChoices(male: Boolean, setGenderMale:(Boolean)->Unit) {
 }
 
 @Composable
-fun IntensityList(onClick: (Float) -> Unit) {
+fun BottlesList(onClick: (Float) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    var selectedText by remember { mutableStateOf("Light") }
+    var selectedText by remember { mutableStateOf("1") }
     var textFieldSize by remember { mutableStateOf(Size.Zero) }
-    val items = listOf("Light", "Usual", "Moderate", "Hard", "Very hard")
+    val items = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99")
     val icon = if (expanded)
         Icons.Filled.KeyboardArrowUp
     else
@@ -173,7 +180,7 @@ fun IntensityList(onClick: (Float) -> Unit) {
                 .onGloballyPositioned { coordinates ->
                     textFieldSize = coordinates.size.toSize()
                 },
-            label = { Text("Select intensity") },
+            label = { Text("Select bottles") },
             trailingIcon = {
                 Icon(
                     icon, "Select intensity",
@@ -187,18 +194,59 @@ fun IntensityList(onClick: (Float) -> Unit) {
                 .width(with(LocalDensity.current) { textFieldSize.width.toDp() })
         ) {
             items.forEach { item ->
-                val intensity: Float = when (item) {
-                    "Light" -> 1.3f
-                    "Usual" -> 1.5f
-                    "Moderate" -> 1.7f
-                    "Hard" -> 2f
-                    "Very hard" -> 2.2f
-                    else -> 0.0f
-                }
+                val number = item.toFloat()
                 DropdownMenuItem(
                     text = { Text(item) },
                     onClick = {
-                        onClick(intensity)
+                        onClick(number)
+                        selectedText = item
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun HoursList(onClick: (Float) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    var selectedText by remember { mutableStateOf("1") }
+    var textFieldSize by remember { mutableStateOf(Size.Zero) }
+    val items = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24")
+    val icon = if (expanded)
+        Icons.Filled.KeyboardArrowUp
+    else
+        Icons.Filled.KeyboardArrowDown
+    Column {
+        OutlinedTextField(
+            readOnly = true,
+            value = selectedText,
+            onValueChange = { selectedText = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { coordinates ->
+                    textFieldSize = coordinates.size.toSize()
+                },
+            label = { Text("Select hours") },
+            trailingIcon = {
+                Icon(
+                    icon, "Select intensity",
+                    Modifier.clickable { expanded = !expanded })
+            }
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .width(with(LocalDensity.current) { textFieldSize.width.toDp() })
+        ) {
+            items.forEach { item ->
+                val number = item.toFloat()
+                DropdownMenuItem(
+                    text = { Text(item) },
+                    onClick = {
+                        onClick(number)
                         selectedText = item
                         expanded = false
                     }
